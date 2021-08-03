@@ -1,6 +1,6 @@
 """Проект спринта №2. Калькулятор денег и калорий
 Программа расчитывает деньги / калории за день(неделю)
-и выводит напоминание.
+и выводит напоминание. Версия 2.
 """
 
 import datetime as dt
@@ -21,10 +21,10 @@ class Record:
         self.date = date
         date_format = '%d.%m.%Y'
         if date is None:
-            self.date = dt.datetime.now().date()
+            self.date = dt.date.today()
         else:
             self.date = dt.datetime.strptime(date, date_format).date()
-        self.spisok_record = [self.amount, self.comment, self.date]
+        self.record_list = [self.amount, self.comment, self.date]
 
 
 class Calculator:
@@ -38,35 +38,36 @@ class Calculator:
         self.limit = limit
         self.records = []
 
-    def add_record(self, spisok_record: Record):
+    def add_record(self, record_list: Record):
         """Метод add_record запрашивает данные в виде списка
         от объекта класса Record и добавляет в список records
         """
-        self.records.append(spisok_record)
+        self.records.append(record_list)
 
     def get_today_stats(self):
         """Метод get_today_stat расчитывает сумму потраченных
         денег(калории) за текущий день
         """
-        self.today = dt.datetime.now().date()
-        self.summa_day = 0
-        for i in self.records:
-            if i.date == self.today:
-                self.summa_day += i.amount
-        return self.summa_day
+        today = dt.date.today()
+        sum_day = 0
+        for note in self.records:
+            if note.date == today:
+                sum_day += note.amount
+        self.balance = self.limit - sum_day
+        return sum_day
 
     def get_week_stats(self):
         """Метод get_week_stat расчитывает сумму потраченных
         денег(калории) за текущую неделю
         """
-        self.today = dt.datetime.now().date()
-        self.period = dt.timedelta(days=7)
-        self.past_day = self.today - self.period
-        self.summa_week = 0
-        for i in self.records:
-            if (i.date > self.past_day) and (i.date <= self.today):
-                self.summa_week += i.amount
-        return self.summa_week
+        today = dt.date.today()
+        period = dt.timedelta(days=7)
+        past_day = today - period
+        sum_week = 0
+        for note in self.records:
+            if past_day < note.date <= today:
+                sum_week += note.amount
+        return sum_week
 
 
 class CaloriesCalculator(Calculator):
@@ -80,13 +81,12 @@ class CaloriesCalculator(Calculator):
         После сравнения данных параметров выводит рекомендации.
         """
         calories = self.get_today_stats()
-        calories_ost = self.limit - calories
         if self.limit >= calories:
             return(
                 "Сегодня можно съесть что-нибудь ещё, но"
-                f" с общей калорийностью не более {calories_ost} кКал")
+                f" с общей калорийностью не более {self.balance} кКал")
         else:
-            return("Хватит есть!")
+            return "Хватит есть!"
 
 
 class CashCalculator(Calculator):
@@ -102,18 +102,29 @@ class CashCalculator(Calculator):
         После сравнения данных параметров выводит рекомендации в той валюте,
         в которой запросили при обращении к данному методу.
         """
-        self.kurs = {'rub': 1, 'usd': self.USD_RATE, 'eur': self.EURO_RATE}
-        self.names = {'rub': 'руб', 'usd': 'USD', 'eur': 'Euro'}
-        self.cash = self.get_today_stats()
-        self.summa = self.limit - self.cash
+        cash_list = {
+            'rub': (1, 'руб'),
+            'usd': (self.USD_RATE, 'USD'),
+            'eur': (self.EURO_RATE, 'Euro')
+        }
+        cash = self.get_today_stats()
         self.currency = currency
-        itog = round((self.summa / self.kurs[self.currency]), 2)
-        if self.limit > self.cash:
-            return(f"На сегодня осталось {itog} {self.names[self.currency]}")
-        elif self.limit == self.cash:
-            return("Денег нет, держись")
+        if self.balance != 0:
+            rounding_remainder = round(
+                (self.balance / cash_list[self.currency][0]), 2)
+        if self.currency not in cash_list.keys():
+            return "Данная валюта не поддерживается"
         else:
-            return(
-                "Денег нет, держись: твой долг"
-                f" - {itog*(-1)} {self.names[self.currency]}"
-            )
+            if self.limit > cash:
+                return(
+                    f"На сегодня осталось {rounding_remainder}"
+                    f" {cash_list[self.currency][1]}"
+                )
+            elif self.limit == cash:
+                return "Денег нет, держись"
+            else:
+                return(
+                    "Денег нет, держись: твой долг"
+                    f" - {abs(rounding_remainder)}"
+                    f" {cash_list[self.currency][1]}"
+                )
