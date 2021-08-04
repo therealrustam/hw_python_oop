@@ -1,6 +1,6 @@
 """Проект спринта №2. Калькулятор денег и калорий
 Программа расчитывает деньги / калории за день(неделю)
-и выводит напоминание. Версия 2.
+и выводит напоминание. Версия 3.
 """
 
 import datetime as dt
@@ -8,7 +8,7 @@ from typing import Optional
 
 
 class Record:
-    """Класс Record формирует список из входных данных
+    """Класс Record формирует записи из входных данных
     в формате количество, комментарии, дата.
     При отсутствии даты, создаёт текущую дату.
     """
@@ -24,7 +24,6 @@ class Record:
             self.date = dt.date.today()
         else:
             self.date = dt.datetime.strptime(date, date_format).date()
-        self.record_list = [self.amount, self.comment, self.date]
 
 
 class Calculator:
@@ -38,11 +37,11 @@ class Calculator:
         self.limit = limit
         self.records = []
 
-    def add_record(self, record_list: Record):
-        """Метод add_record запрашивает данные в виде списка
-        от объекта класса Record и добавляет в список records
+    def add_record(self, rec: Record):
+        """Метод add_record запрашивает данные в виде
+        объекта класса Record добавляет в список records
         """
-        self.records.append(record_list)
+        self.records.append(rec)
 
     def get_today_stats(self):
         """Метод get_today_stat расчитывает сумму потраченных
@@ -53,7 +52,6 @@ class Calculator:
         for note in self.records:
             if note.date == today:
                 sum_day += note.amount
-        self.balance = self.limit - sum_day
         return sum_day
 
     def get_week_stats(self):
@@ -69,6 +67,12 @@ class Calculator:
                 sum_week += note.amount
         return sum_week
 
+    def get_balance(self):
+        """Метод get_balance() выдаёт результат вычитания
+        из лимита суммы денег/калорий за день
+        """
+        return(self.limit - self.get_today_stats())
+
 
 class CaloriesCalculator(Calculator):
     """Класс CaloriesCalculator (родительский класс -
@@ -80,11 +84,10 @@ class CaloriesCalculator(Calculator):
         get_today_stats сумму калорий за день и ограничение.
         После сравнения данных параметров выводит рекомендации.
         """
-        calories = self.get_today_stats()
-        if self.limit >= calories:
+        if self.limit >= self.get_today_stats():
             return(
                 "Сегодня можно съесть что-нибудь ещё, но"
-                f" с общей калорийностью не более {self.balance} кКал")
+                f" с общей калорийностью не более {self.get_balance()} кКал")
         else:
             return "Хватит есть!"
 
@@ -98,33 +101,29 @@ class CashCalculator(Calculator):
 
     def get_today_cash_remained(self, currency):
         """Метод get_today_cash_remained запрашивает у метода
-        get_today_stats сумму потраченных денег за день и ограничение.
-        После сравнения данных параметров выводит рекомендации в той валюте,
-        в которой запросили при обращении к данному методу.
+        get_today_stats сумму потраченных денег за день, у метода
+        get_balance баланс и ограничение. После сравнения данных
+        параметров выводит рекомендации в той валюте,в которой
+        запросили при обращении к данному методу.
         """
         cash_list = {
             'rub': (1, 'руб'),
             'usd': (self.USD_RATE, 'USD'),
             'eur': (self.EURO_RATE, 'Euro')
         }
-        cash = self.get_today_stats()
-        self.currency = currency
-        if self.balance != 0:
-            rounding_remainder = round(
-                (self.balance / cash_list[self.currency][0]), 2)
-        if self.currency not in cash_list.keys():
+        if currency not in cash_list:
             return "Данная валюта не поддерживается"
-        else:
+        cash = self.get_today_stats()
+        if self.get_balance() != 0:
+            rounding_remainder = round(
+                (self.get_balance() / cash_list[currency][0]), 2)
+            cash_name = cash_list[currency][1]
             if self.limit > cash:
-                return(
-                    f"На сегодня осталось {rounding_remainder}"
-                    f" {cash_list[self.currency][1]}"
-                )
-            elif self.limit == cash:
-                return "Денег нет, держись"
+                return f"На сегодня осталось {rounding_remainder} {cash_name}"
             else:
                 return(
-                    "Денег нет, держись: твой долг"
-                    f" - {abs(rounding_remainder)}"
-                    f" {cash_list[self.currency][1]}"
+                    "Денег нет, держись: твой долг - "
+                    f"{abs(rounding_remainder)} {cash_name}"
                 )
+        else:
+            return "Денег нет, держись"
