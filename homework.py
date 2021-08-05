@@ -1,6 +1,6 @@
 """Проект спринта №2. Калькулятор денег и калорий
 Программа расчитывает деньги / калории за день(неделю)
-и выводит напоминание. Версия 3.
+и выводит напоминание. Версия 4.
 """
 
 import datetime as dt
@@ -37,11 +37,11 @@ class Calculator:
         self.limit = limit
         self.records = []
 
-    def add_record(self, rec: Record):
+    def add_record(self, notation: Record):
         """Метод add_record запрашивает данные в виде
         объекта класса Record добавляет в список records
         """
-        self.records.append(rec)
+        self.records.append(notation)
 
     def get_today_stats(self):
         """Метод get_today_stat расчитывает сумму потраченных
@@ -69,9 +69,9 @@ class Calculator:
 
     def get_balance(self):
         """Метод get_balance() выдаёт результат вычитания
-        из лимита суммы денег/калорий за день
+        суммы денег/калорий из лимита.
         """
-        return(self.limit - self.get_today_stats())
+        return self.limit - self.get_today_stats()
 
 
 class CaloriesCalculator(Calculator):
@@ -81,13 +81,14 @@ class CaloriesCalculator(Calculator):
 
     def get_calories_remained(self):
         """Метод get_calories_remained запрашивает у метода
-        get_today_stats сумму калорий за день и ограничение.
-        После сравнения данных параметров выводит рекомендации.
+        get_balance баланс за день. В зависимости от баланса
+        выводит рекомендации.
         """
-        if self.limit >= self.get_today_stats():
+        balance_calories = self.get_balance()
+        if balance_calories > 0:
             return(
                 "Сегодня можно съесть что-нибудь ещё, но"
-                f" с общей калорийностью не более {self.get_balance()} кКал")
+                f" с общей калорийностью не более {balance_calories} кКал")
         else:
             return "Хватит есть!"
 
@@ -101,10 +102,9 @@ class CashCalculator(Calculator):
 
     def get_today_cash_remained(self, currency):
         """Метод get_today_cash_remained запрашивает у метода
-        get_today_stats сумму потраченных денег за день, у метода
-        get_balance баланс и ограничение. После сравнения данных
-        параметров выводит рекомендации в той валюте,в которой
-        запросили при обращении к данному методу.
+        get_balance баланс. После проверки баланса выводит
+        рекомендации в той валюте, в которой запросили при
+        обращении к данному методу.
         """
         cash_list = {
             'rub': (1, 'руб'),
@@ -113,17 +113,14 @@ class CashCalculator(Calculator):
         }
         if currency not in cash_list:
             return "Данная валюта не поддерживается"
-        cash = self.get_today_stats()
-        if self.get_balance() != 0:
-            rounding_remainder = round(
-                (self.get_balance() / cash_list[currency][0]), 2)
-            cash_name = cash_list[currency][1]
-            if self.limit > cash:
-                return f"На сегодня осталось {rounding_remainder} {cash_name}"
-            else:
-                return(
-                    "Денег нет, держись: твой долг - "
-                    f"{abs(rounding_remainder)} {cash_name}"
-                )
-        else:
-            return "Денег нет, держись"
+        balance_cash = self.get_balance()
+        rounding_remainder = round((balance_cash / cash_list[currency][0]), 2)
+        cash_name = cash_list[currency][1]
+        if balance_cash > 0:
+            return f"На сегодня осталось {rounding_remainder} {cash_name}"
+        if balance_cash < 0:
+            rounding_remainder = abs(rounding_remainder)
+            return("Денег нет, держись: твой долг - "
+                   f"{rounding_remainder} {cash_name}"
+                   )
+        return "Денег нет, держись"
