@@ -1,6 +1,6 @@
 """Проект спринта №2. Калькулятор денег и калорий
 Программа расчитывает деньги / калории за день(неделю)
-и выводит напоминание. Версия 5.
+и выводит напоминание. Версия 6.
 """
 
 import datetime as dt
@@ -115,14 +115,12 @@ class CashCalculator(Calculator):
             return "Данная валюта не поддерживается"
         balance_cash = self.get_balance()
         cash_name = cash_list[currency][1]
+        if balance_cash == 0:
+            return "Денег нет, держись"
+        rounding_remainder = round((balance_cash / cash_list[currency][0]), 2)
         if balance_cash > 0:
-            rounding_remainder = round(
-                (balance_cash / cash_list[currency][0]), 2)
             return f"На сегодня осталось {rounding_remainder} {cash_name}"
-        if balance_cash < 0:
-            rounding_remainder = abs(
-                round((balance_cash / cash_list[currency][0]), 2))
-            return("Денег нет, держись: твой долг - "
-                   f"{rounding_remainder} {cash_name}"
-                   )
-        return "Денег нет, держись"
+        rounding_remainder = abs(rounding_remainder)
+        return("Денег нет, держись: твой долг - "
+               f"{rounding_remainder} {cash_name}"
+               )
