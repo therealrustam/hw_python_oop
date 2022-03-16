@@ -10,7 +10,10 @@
 В виртуальном окружении установите зависимости: pip install -r requirements.txt
 
 ## Технологии 
-Python
+
+- Python
+- Pytest
 
 ## Авторы
+
 Рустам Вахитов
